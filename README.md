@@ -116,7 +116,6 @@ LiStargan_ADA/
 |   |   |-- misc.py
 |   |   |-- persistence.py
 |   |   `-- training_stats.py
-|   |-- Unsupervised\ Image\ to\ Image\ Translation\ with\ A\ Lightweight\ GAN.pptx
 |   |-- augment.py
 |   |-- checkpoint.py
 |   |-- data_loader.py
@@ -130,18 +129,6 @@ LiStargan_ADA/
 |   |   `-- util.cpython-37.pyc
 |   |-- __init__.py
 |   `-- util.py
-|-- expr
-|   |-- checkpoints
-|   |   |-- 030000_nets.ckpt
-|   |   |-- 030000_nets_ema.ckpt
-|   |   `-- 030000_optims.ckpt
-|   |-- eval
-|   |   |-- FID_30000_latent.json
-|   |   |-- FID_30000_reference.json
-|   |   |-- LPIPS_30000_latent.json
-|   |   `-- LPIPS_30000_reference.json
-|   `-- results
-|       `-- reference.jpg
 |-- metrics
 |   |-- eval.py
 |   |-- fid.py
