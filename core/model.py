@@ -246,6 +246,37 @@ class MappingNetwork(nn.Module):
         idx = torch.LongTensor(range(y.size(0))).to(y.device)
         s = out[idx, y]  # (batch, style_dim)
         return s
+    
+class TeacherMappingNetwork(nn.Module):
+    def __init__(self, latent_dim=16, style_dim=64, num_domains=2, max_hidden_dim=512):
+        super().__init__()
+        layers = []
+        layers += [nn.Linear(latent_dim, 512)]
+        layers += [nn.ReLU()]
+        for _ in range(3):
+            layers += [nn.Linear(512, 512)]
+            layers += [nn.ReLU()]
+        self.shared = nn.Sequential(*layers)
+
+        self.unshared = nn.ModuleList()
+        for _ in range(num_domains):
+            self.unshared += [nn.Sequential(nn.Linear(512, 512),
+                                            nn.ReLU(),
+                                            nn.Linear(512, 512),
+                                            nn.ReLU(),
+                                            nn.Linear(512, 512),
+                                            nn.ReLU(),
+                                            nn.Linear(512, style_dim))]
+
+    def forward(self, z, y):
+        h = self.shared(z)
+        out = []
+        for layer in self.unshared:
+            out += [layer(h)]
+        out = torch.stack(out, dim=1)  # (batch, num_domains, style_dim)
+        idx = torch.LongTensor(range(y.size(0))).to(y.device)
+        s = out[idx, y]  # (batch, style_dim)
+        return s
 
 class StyleDiscriminator(nn.Module):
     def __init__(self, style_dim=64, num_domains=2, max_hidden_dim=128):
@@ -365,7 +396,7 @@ def build_model(args):
 
 def build_teacher_model(args):
     generator = Generator(args.img_size, args.style_dim, w_hpf=args.w_hpf).eval()
-    mapping_network = MappingNetwork(args.latent_dim, args.style_dim, args.num_domains).eval()
+    mapping_network = TeacherMappingNetwork(args.latent_dim, args.style_dim, args.num_domains).eval()
     style_encoder = StyleEncoder(args.img_size, args.style_dim, args.num_domains).eval()
 
     nets = Munch(generator=generator,
