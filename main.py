@@ -132,7 +132,7 @@ if __name__ == '__main__':
                         help='Batch size for validation')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='Learning rate for D, E and G')
-    parser.add_argument('--f_lr', type=float, default=1e-6,
+    parser.add_argument('--f_lr', type=float, default=1e-4,
                         help='Learning rate for F')
     parser.add_argument('--beta1', type=float, default=0.0,
                         help='Decay rate for 1st moment of Adam')
