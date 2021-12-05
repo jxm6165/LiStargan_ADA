@@ -102,6 +102,8 @@ class Solver(nn.Module):
         ada_target = 0.6
         ada_interval = 4
         ada_kimg = 500
+        ada_warmup = False
+        ada_warmup_iter = int(2500 + args.resume_iter)
         # Augment Pipeline: Choose to use bgc Pipeline as default
         if args.augpipe == 'blit':
             augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1).to(self.device)
@@ -256,7 +258,7 @@ class Solver(nn.Module):
                 
                 ada_distance = ada_current - ada_target
                 ada_distance2 = ada_current2 - ada_target
-                if args.ada_mode == 'both':
+                if args.ada_mode == 'both' or ((i >= ada_warmup_iter) and (ada_warmup==True)):
                     ada_dist = (ada_distance + ada_distance2) / 2
                 elif args.ada_mode == 'latent':
                     ada_dist = ada_distance
