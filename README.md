@@ -30,7 +30,6 @@ bash download.sh pretrained-network-afhq
 <b>CelebA.</b> Two Domain Image-to-Image Translation.
 ```bash
 python main.py --mode train --num_domains 2 --w_hpf 1 \
-               --alpha 128 --efficient 1 --f_lr 1e-4 \
                --lambda_reg 1 --lambda_sty 1 --lambda_ds 1 --lambda_cyc 1 \
                --batch_size 8 --val_batch_size 8 \
                --teacher_checkpoint_dir expr/checkpoints/celeba_hq --teacher_resume_iter 100000 \
@@ -43,7 +42,6 @@ python main.py --mode train --num_domains 2 --w_hpf 1 \
 <b>AFHQ.</b> Multi-Domain Image-to-Image Translation.
 ```bash
 python main.py --mode train --num_domains 3 --w_hpf 0 \
-               --alpha 128 --efficient 1 --f_lr 1e-4 \
                --lambda_reg 1 --lambda_sty 1 --lambda_ds 2 --lambda_cyc 1 \
                --batch_size 8 --val_batch_size 8 \
                --teacher_checkpoint_dir expr/checkpoints/afhq --teacher_resume_iter 100000 \
@@ -125,7 +123,7 @@ LiStargan_ADA/
 |   |-- augment.py
 |   |-- checkpoint.py
 |   |-- data_loader.py
-|   |-- distiller.py
+|   |-- solver.py
 |   |-- model.py
 |   |-- utils.py
 |   `-- wing.py
