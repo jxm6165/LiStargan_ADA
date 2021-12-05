@@ -266,7 +266,34 @@ class Solver(nn.Module):
             if (i+1) % args.eval_every == 0:
                 calculate_metrics(nets_ema, args, i+1, mode='latent')
                 calculate_metrics(nets_ema, args, i+1, mode='reference')
-                
+
+    @torch.no_grad()
+    def sample(self, loaders):
+        args = self.args
+        nets_ema = self.nets_ema
+        os.makedirs(args.result_dir, exist_ok=True)
+        self._load_checkpoint(args.resume_iter)
+
+        src = next(InputFetcher(loaders.src, None, args.latent_dim, 'test'))
+        ref = next(InputFetcher(loaders.ref, None, args.latent_dim, 'test'))
+
+        fname = ospj(args.result_dir, 'reference.jpg')
+        print('Working on {}...'.format(fname))
+        utils.translate_using_reference(nets_ema, args, src.x, ref.x, ref.y, fname)
+
+        fname = ospj(args.result_dir, 'video_ref.mp4')
+        print('Working on {}...'.format(fname))
+        utils.video_ref(nets_ema, args, src.x, ref.x, ref.y, fname)
+
+    @torch.no_grad()
+    def evaluate(self):
+        args = self.args
+        nets_ema = self.nets_ema
+        resume_iter = args.resume_iter
+        self._load_checkpoint(args.resume_iter)
+        calculate_metrics(nets_ema, args, step=resume_iter, mode='latent')
+        calculate_metrics(nets_ema, args, step=resume_iter, mode='reference')
+
 def compute_StyleDiscriminator_loss(nets, args, y_trg, s_trg, z_trg=None, x_ref=None):
     assert (z_trg is None) != (x_ref is None)
     s_trg.requires_grad_()
