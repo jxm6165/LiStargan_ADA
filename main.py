@@ -100,9 +100,9 @@ if __name__ == '__main__':
                         help='Hidden dimension of mapping network')
     parser.add_argument('--style_dim', type=int, default=64,
                         help='Style code dimension')
-    parser.add_argument('--alpha', type=int, default=512,
+    parser.add_argument('--alpha', type=int, default=128,
                         help='Maximum channels for convolution and maximum hidden nodes for linear layers')
-    parser.add_argument('--efficient', type=int, default=0,
+    parser.add_argument('--efficient', type=int, default=1,
                         help='Efficient network with separable convolution and reduced MACs/FLOPs')
     
     # weight for objective functions
