@@ -36,7 +36,7 @@ python main.py --mode train --num_domains 2 --w_hpf 1 \
                --train_img_dir data/celeba_hq/train \
                --val_img_dir data/celeba_hq/val \
                --sample_every 500 --save_every 500 --print_every 50 --eval_every 10000 \
-               --total_iter 20000
+               --total_iter 20000 --ds_iter 20000
 ```
 
 <b>AFHQ.</b> Multi-Domain Image-to-Image Translation.
@@ -48,7 +48,7 @@ python main.py --mode train --num_domains 3 --w_hpf 0 \
                --train_img_dir data/afhq/train \
                --val_img_dir data/afhq/val \
                --sample_every 500 --save_every 500 --print_every 50 --eval_every 10000 \
-               --total_iter 30000
+               --total_iter 30000 --ds_iter 30000
 ```
 
 To resume from previously saved checkpoint with iteration number, e.g., 10000, set `--resume_iter 10000`.
