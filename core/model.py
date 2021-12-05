@@ -24,9 +24,20 @@ class SeparableConv2d(nn.Module):
     def __init__(self,in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size, stride=stride, 
-                      padding=padding, dilation=dilation, groups=in_channels, bias=bias, padding_mode=padding_mode),
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=1, bias=bias)
+            nn.Conv2d(in_channels=in_channels, 
+                      out_channels=in_channels, 
+                      kernel_size=kernel_size, 
+                      stride=stride, 
+                      padding=padding, 
+                      dilation=dilation, 
+                      groups=in_channels, 
+                      bias=bias, 
+                      padding_mode=padding_mode),
+            nn.Conv2d(in_channels=in_channels, 
+                      out_channels=out_channels, 
+                      kernel_size=1, 
+                      stride=1, 
+                      bias=bias)
         )
 
     def forward(self, x):
@@ -44,12 +55,10 @@ class ResBlk(nn.Module):
         self._build_weights(dim_in, dim_out)
         
     def _build_weights(self, dim_in, dim_out):
-        if self.separable == 1:
-            self.conv1 = SeparableConv2d(dim_in, dim_in, 3, 1, 1)
-            self.conv2 = SeparableConv2d(dim_in, dim_out, 3, 1, 1)
-        else:
-            self.conv1 = nn.Conv2d(dim_in, dim_in, 3, 1, 1)
-            self.conv2 = nn.Conv2d(dim_in, dim_out, 3, 1, 1)
+
+        self.conv1 = SeparableConv2d(dim_in, dim_in, 3, 1, 1) if self.separable else nn.Conv2d(dim_in, dim_in, 3, 1, 1)
+        self.conv2 = SeparableConv2d(dim_in, dim_out, 3, 1, 1) if self.separable else nn.Conv2d(dim_in, dim_out, 3, 1, 1)
+
         if self.normalize:
             self.norm1 = nn.InstanceNorm2d(dim_in, affine=True)
             self.norm2 = nn.InstanceNorm2d(dim_in, affine=True)
@@ -211,22 +220,22 @@ class MappingNetwork(nn.Module):
     def __init__(self, latent_dim=16, style_dim=64, num_domains=2, max_hidden_dim=512):
         super().__init__()
         layers = []
-        layers += [nn.Linear(latent_dim, max_hidden_dim)]
+        layers += [nn.Linear(latent_dim, 128)]
         layers += [nn.ReLU()]
         for _ in range(3):
-            layers += [nn.Linear(max_hidden_dim, max_hidden_dim)]
+            layers += [nn.Linear(128, 128)]
             layers += [nn.ReLU()]
         self.shared = nn.Sequential(*layers)
 
         self.unshared = nn.ModuleList()
         for _ in range(num_domains):
-            self.unshared += [nn.Sequential(nn.Linear(max_hidden_dim, max_hidden_dim),
+            self.unshared += [nn.Sequential(nn.Linear(128, 128),
                                             nn.ReLU(),
-                                            nn.Linear(max_hidden_dim, max_hidden_dim),
+                                            nn.Linear(128, 128),
                                             nn.ReLU(),
-                                            nn.Linear(max_hidden_dim, max_hidden_dim),
+                                            nn.Linear(128, 128),
                                             nn.ReLU(),
-                                            nn.Linear(max_hidden_dim, style_dim))]
+                                            nn.Linear(128, style_dim))]
 
     def forward(self, z, y):
         h = self.shared(z)
@@ -239,25 +248,25 @@ class MappingNetwork(nn.Module):
         return s
 
 class StyleDiscriminator(nn.Module):
-    def __init__(self, style_dim=64, num_domains=2, max_hidden_dim=512):
+    def __init__(self, style_dim=64, num_domains=2, max_hidden_dim=128):
         super().__init__()
         layers = []
-        layers += [nn.Linear(style_dim, max_hidden_dim)]
+        layers += [nn.Linear(style_dim, 128)]
         layers += [nn.LeakyReLU()]
         for _ in range(3):
-            layers += [nn.Linear(max_hidden_dim, max_hidden_dim)]
+            layers += [nn.Linear(128, 128)]
             layers += [nn.LeakyReLU()]
         self.shared = nn.Sequential(*layers)
 
         self.unshared = nn.ModuleList()
         for _ in range(num_domains):
-            self.unshared += [nn.Sequential(nn.Linear(max_hidden_dim, max_hidden_dim),
+            self.unshared += [nn.Sequential(nn.Linear(128, 128),
                                             nn.LeakyReLU(),
-                                            nn.Linear(max_hidden_dim, max_hidden_dim),
+                                            nn.Linear(128, 128),
                                             nn.LeakyReLU(),
-                                            nn.Linear(max_hidden_dim, max_hidden_dim),
+                                            nn.Linear(128, 128),
                                             nn.LeakyReLU(),
-                                            nn.Linear(max_hidden_dim, 1))]
+                                            nn.Linear(128, 1))]
 
     def forward(self, z, y):
         h = self.shared(z)
@@ -270,7 +279,7 @@ class StyleDiscriminator(nn.Module):
         return s 
     
 class StyleEncoder(nn.Module):
-    def __init__(self, img_size=256, style_dim=64, num_domains=2, max_conv_dim=512, efficient=0):
+    def __init__(self, img_size=256, style_dim=64, num_domains=2, max_conv_dim=512 efficient=1):
         super().__init__()
         dim_in = 2**14 // img_size
         blocks = []
@@ -331,10 +340,10 @@ class Discriminator(nn.Module):
 
 
 def build_model(args):
-    generator = Generator(args.img_size,args.style_dim,args.alpha,args.w_hpf,args.efficient)
-    mapping_network = MappingNetwork(args.latent_dim,args.style_dim,args.num_domains,args.alpha)
-    style_encoder = StyleEncoder(args.img_size,args.style_dim,args.num_domains,args.alpha,args.efficient)
-    discriminator = Discriminator(args.img_size,args.num_domains,args.alpha)
+    generator = Generator(args.img_size,args.style_dim,128,args.w_hpf,args.efficient)
+    mapping_network = MappingNetwork(args.latent_dim,args.style_dim,args.num_domains,128)
+    style_encoder = StyleEncoder(args.img_size,args.style_dim,args.num_domains,128,1)
+    discriminator = Discriminator(args.img_size,args.num_domains,128)
     generator_ema = copy.deepcopy(generator)
     mapping_network_ema = copy.deepcopy(mapping_network)
     style_encoder_ema = copy.deepcopy(style_encoder)
