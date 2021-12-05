@@ -96,10 +96,13 @@ class Solver(nn.Module):
         nets = self.nets
         nets_ema = self.nets_ema
         optims = self.optims
+        
+        # Parameters for ADA
         augment_p = 0
         ada_target = 0.6
         ada_interval = 4
         ada_kimg = 500
+        # Choose to use bCR Pipeline as default
         augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1).to(self.device)
         augment_pipe.p.copy_(torch.as_tensor(augment_p))
         
@@ -156,15 +159,11 @@ class Solver(nn.Module):
             g_loss.backward()
             optims.generator.step()
             
+            s_mt, s_mt2 = compute_s_mt(teacher_nets, z_trg, y_trg, z_trg2, y_org)
+            s_et, s_ot = compute_s_t(teacher_nets, x_ref, y_trg, x_real, y_org)
+            x_mt, x_et = compute_x_t(teacher_nets, x_real, s_mt, s_et, masks)
+                      
             # Knowledge Distillation computations from Kapoor, 2021
-            with torch.no_grad():
-                s_mt = teacher_nets.mapping_network(z_trg, y_trg)
-                s_mt2 = teacher_nets.mapping_network(z_trg2, y_org)
-                x_mt = teacher_nets.generator(x_real, s_mt, masks=masks)                
-                s_et = teacher_nets.style_encoder(x_ref, y_trg)
-                s_ot = teacher_nets.style_encoder(x_real, y_org)
-                x_et = teacher_nets.generator(x_real, s_et, masks=masks)
-            
             # train the discriminator
             d_loss_mt = compute_d_loss_kd(nets, args, x_real, x_mt, y_trg, s_mt, masks)
             self._reset_grad()
@@ -294,6 +293,25 @@ class Solver(nn.Module):
         calculate_metrics(nets_ema, args, step=resume_iter, mode='latent')
         calculate_metrics(nets_ema, args, step=resume_iter, mode='reference')
 
+@torch.no_grad()
+def compute_s_mt(nets, z_trg, y_trg, z_trg2, y_org):
+    s_mt = nets.mapping_network(z_trg, y_trg)
+    s_mt2 = nets.mapping_network(z_trg2, y_org)
+    return s_mt, s_mt2
+
+@torch.no_grad()        
+def compute_s_t(nets, x_ref, y_trg, x_real, y_org):
+    s_et = nets.style_encoder(x_ref, y_trg)
+    s_ot = nets.style_encoder(x_real, y_org)
+    return s_et, s_ot
+
+@torch.no_grad()
+def compute_x_t(nets, x_real, s_mt, s_et, masks):
+    x_mt = nets.generator(x_real, s_mt, masks=masks)
+    x_et = nets.generator(x_real, s_et, masks=masks)
+    return x_mt, x_et
+    
+        
 def compute_StyleDiscriminator_loss(nets, args, y_trg, s_trg, z_trg=None, x_ref=None):
     assert (z_trg is None) != (x_ref is None)
     s_trg.requires_grad_()
