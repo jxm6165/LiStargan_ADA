@@ -61,9 +61,9 @@ class LPIPS(nn.Module):
     def _load_lpips_weights(self):
         own_state_dict = self.state_dict()
         if torch.cuda.is_available():
-            state_dict = torch.load('/content/drive/MyDrive/tinystarganv2_ada/metrics/lpips_weights.ckpt')
+            state_dict = torch.load('/content/drive/MyDrive/LiStargan_ADA/metrics/lpips_weights.ckpt')
         else:
-            state_dict = torch.load('/content/drive/MyDrive/tinystarganv2_ada/metrics/lpips_weights.ckpt',
+            state_dict = torch.load('/content/drive/MyDrive/LiStargan_ADA/metrics/lpips_weights.ckpt',
                                     map_location=torch.device('cpu'))
         for name, param in state_dict.items():
             if name in own_state_dict:
