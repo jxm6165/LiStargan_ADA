@@ -140,7 +140,7 @@ class Solver(nn.Module):
             d_loss.backward()
             optims.discriminator.step()
 
-            _, d_loss, d_losses_ref = compute_d_loss(
+            real_logits2, d_loss, d_losses_ref = compute_d_loss(
                 nets, args, augment_pipe, x_real_=x_real, y_org=y_org, y_trg=y_trg, x_ref=x_ref, masks=masks)
             self._reset_grad()
             d_loss.backward()
@@ -228,14 +228,25 @@ class Solver(nn.Module):
                 args.lambda_ds -= (initial_lambda_ds / args.ds_iter)
             
             # Implement Adaptive Data Augmentation Update
+          
             if i % ada_interval == 0:
                 ada_current = real_logits.sign().sum().item()
+                ada_current2 = real_logits2.sign().sum().item()
+                
                 ada_distance = ada_current - ada_target
-                ada_rt = np.sign(ada_distance - ada_target)
+                ada_distance2 = ada_current2 - ada_target
+                if args.ada_mode == 'both':
+                    ada_dist = (ada_distance + ada_distance2) / 2
+                elif args.ada_mode == 'latent':
+                    ada_dist = ada_distance
+                else:
+                    ada_dist = ada_distance2
+                ada_rt = np.sign(ada_dist - ada_target)
                 ada_batch_size = x_real.size(0)
                 ar_step = (ada_batch_size * ada_interval) / (ada_kimg * 1000)
                 adjust = ada_rt * ar_step
-                augment_pipe.p.copy_((augment_pipe.p + adjust).max(misc.constant(0, device=self.device)))      
+                new_p = augment_pipe.p + adjust
+                augment_pipe.p.copy_(new_p.max(misc.constant(0, device=self.device)))      
             
             # print out log info
             if (i+1) % args.print_every == 0:
