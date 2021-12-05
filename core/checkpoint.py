@@ -38,5 +38,5 @@ class CheckpointIO(object):
         else:
             module_dict = torch.load(fname, map_location=torch.device('cpu'))
         for name, module in self.module_dict.items():
-            if type(module) != bool:
+            if type(module) != bool: # Prevent Mapping Error After Model Compression
                 module.load_state_dict(module_dict[name])
