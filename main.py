@@ -103,6 +103,9 @@ if __name__ == '__main__':
     parser.add_argument('--ada_mode', type=str, default='latent',
                         choices=['latent', 'both', 'reference'],
                         help='This argument is used in ada to update augment control based on which kind of synthesis')
+    parser.add_argument('--augpipe', type=str, default='bgc',
+                        choices=['blit', 'geom', 'color', 'filter', 'noise', 'cutout', 'bg', 'bgc', 'bgcf', 'bgcfn', 'bgcfnc'],
+                        help='This argument is used to determine augmentation pipeline for Adaptive Data Augmentation (ADA)')
     parser.add_argument('--alpha', type=int, default=128,
                         help='Maximum channels for convolution and maximum hidden nodes for linear layers')
     parser.add_argument('--efficient', type=int, default=1,
