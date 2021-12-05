@@ -29,7 +29,7 @@ from core.augment import AugmentPipe
 from core.torch_utils import misc
 import numpy as np
 
-class Distiller(nn.Module):
+class Solver(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
@@ -39,7 +39,7 @@ class Distiller(nn.Module):
         self.teacher_nets = build_teacher_model(args)
         self.nets.StyleDiscriminator = StyleDiscriminator(style_dim=args.style_dim, 
                                                           num_domains=args.num_domains, 
-                                                          max_hidden_dim=args.alpha)
+                                                          max_hidden_dim=128)
         # below setattrs are to make networks be children of Solver, e.g., for self.to(self.device)
         for name, module in self.nets.items():
             utils.print_network(module, name)
@@ -48,24 +48,27 @@ class Distiller(nn.Module):
             setattr(self, name + '_ema', module)
         for name, module in self.teacher_nets.items():
             setattr(self, 'teacher_' + name + '_ema', module)    
-
-        self.optims = Munch()
-        for net in self.nets.keys():
-            if net == 'fan':
-                continue
-            self.optims[net] = torch.optim.Adam(
-                params=self.nets[net].parameters(),
-                lr=args.f_lr if net == 'mapping_network' else args.lr,
-                betas=[args.beta1, args.beta2],
-                weight_decay=args.weight_decay)
-
-        self.ckptios = [
-            CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_nets.ckpt'), **self.nets),
-            CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_nets_ema.ckpt'), **self.nets_ema),
-            CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_optims.ckpt'), **self.optims)]
         
-        self.teacher_ckptios = CheckpointIO(ospj(args.teacher_checkpoint_dir, '{:06d}_nets_ema.ckpt'), **self.teacher_nets)
-                
+        if args.mode == 'train':
+            self.optims = Munch()
+            for net in self.nets.keys():
+                if net == 'fan':
+                    continue
+                self.optims[net] = torch.optim.Adam(
+                    params=self.nets[net].parameters(),
+                    lr=args.f_lr if net == 'mapping_network' else args.lr,
+                    betas=[args.beta1, args.beta2],
+                    weight_decay=args.weight_decay)
+
+            self.ckptios = [
+                CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_nets.ckpt'), **self.nets),
+                CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_nets_ema.ckpt'), **self.nets_ema),
+                CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_optims.ckpt'), **self.optims)]
+
+            self.teacher_ckptios = CheckpointIO(ospj(args.teacher_checkpoint_dir, '{:06d}_nets_ema.ckpt'), **self.teacher_nets)
+        else:
+            self.ckptios = [CheckpointIO(ospj(args.checkpoint_dir, '{:06d}_nets_ema.ckpt'), data_parallel=True, **self.nets_ema)]  
+         
         self.to(self.device)
         for name, network in self.named_children():
             # Do not initialize the FAN parameters
@@ -153,7 +156,7 @@ class Distiller(nn.Module):
             g_loss.backward()
             optims.generator.step()
             
-            # Knowledge Distillation computations
+            # Knowledge Distillation computations from Kapoor, 2021
             with torch.no_grad():
                 s_mt = teacher_nets.mapping_network(z_trg, y_trg)
                 s_mt2 = teacher_nets.mapping_network(z_trg2, y_org)
@@ -214,7 +217,8 @@ class Distiller(nn.Module):
                             dm_loss2=dm_loss2.item(),
                             m_loss=m_loss.item(),
                             m_loss2=m_loss2.item())
-
+            
+            # End of KD
             # compute moving average of network parameters
             moving_average(nets.generator, nets_ema.generator, beta=0.999)
             moving_average(nets.mapping_network, nets_ema.mapping_network, beta=0.999)
@@ -224,8 +228,14 @@ class Distiller(nn.Module):
             if args.lambda_ds > 0:
                 args.lambda_ds -= (initial_lambda_ds / args.ds_iter)
             
+            # Implement Adaptive Data Augmentation Update
             if i % ada_interval == 0:
-                adjust = np.sign(real_logits.sign().sum().item() - ada_target) * (x_real.size(0) * ada_interval) / (ada_kimg * 1000)
+                ada_current = real_logits.sign().sum().item()
+                ada_distance = ada_current - ada_target
+                ada_rt = np.sign(ada_distance - ada_target)
+                ada_batch_size = x_real.size(0)
+                ar_step = (ada_batch_size * ada_interval) / (ada_kimg * 1000)
+                adjust = ada_rt * ar_step
                 augment_pipe.p.copy_((augment_pipe.p + adjust).max(misc.constant(0, device=self.device)))      
             
             # print out log info
