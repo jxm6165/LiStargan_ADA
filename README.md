@@ -55,7 +55,7 @@ To resume from previously saved checkpoint with iteration number, e.g., 10000, s
 
 We currently provide two user-defined values for ADA. First, users can set `--ada_mode` as both, latent or reference. This is an argument to tell ADA which synthesis to improve. If both, the augmentation strengths will be determined by both latent synthesis and reference synthesis. The default mode is latent.
 
-Second, users can set `augpipe` referring to augmentation pipeline consisting of different combinations of transformations. The default pipeline is `bgc`.
+Second, users can set `augpipe` referring to augmentation pipeline consisting of different combinations of transformations. The default pipeline is `bgc`. Accepted values are `blit, geom, color, filter, noise, cutout, bg, bgc, bgcf, bgcfn, bgcfnc`.
 
 
 
