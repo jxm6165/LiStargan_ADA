@@ -102,8 +102,29 @@ class Solver(nn.Module):
         ada_target = 0.6
         ada_interval = 4
         ada_kimg = 500
-        # Choose to use bCR Pipeline as default
-        augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1).to(self.device)
+        # Augment Pipeline: Choose to use bgc Pipeline as default
+        if args.augpipe == 'blit':
+            augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1).to(self.device)
+        elif args.augpipe == 'geom':
+            augment_pipe = AugmentPipe(scale=1, rotate=1, aniso=1, xfrac=1).to(self.device)        
+        elif args.augpipe == 'color':
+            augment_pipe = AugmentPipe(brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1).to(self.device)
+        elif args.augpipe == 'filter':
+            augment_pipe = AugmentPipe(imgfilter=1).to(self.device)
+        elif args.augpipe == 'noise':
+            augment_pipe = AugmentPipe(noise=1).to(self.device)        
+        elif args.augpipe == 'cutout':
+            augment_pipe = AugmentPipe(cutout=1).to(self.device)       
+        elif args.augpipe == 'bg':
+            augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1).to(self.device)
+        elif args.augpipe == 'bgcf':
+            augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1).to(self.device)
+        elif args.augpipe == 'bgcfn':
+            augment_pipe = AugmentPipe((xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1).to(self.device)
+        elif args.augpipe == 'bgcfnc':
+            augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1, cutout=1).to(self.device)         
+        else:
+            augment_pipe = AugmentPipe(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1).to(self.device)
         augment_pipe.p.copy_(torch.as_tensor(augment_p))
         
         # fetch random training images
