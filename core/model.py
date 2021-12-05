@@ -340,7 +340,7 @@ class Discriminator(nn.Module):
 
 
 def build_model(args):
-    generator = Generator(args.img_size,args.style_dim,128,args.w_hpf,args.efficient)
+    generator = Generator(args.img_size,args.style_dim,128,args.w_hpf,1)
     mapping_network = MappingNetwork(args.latent_dim,args.style_dim,args.num_domains,128)
     style_encoder = StyleEncoder(args.img_size,args.style_dim,args.num_domains,128,1)
     discriminator = Discriminator(args.img_size,args.num_domains,128)
@@ -371,9 +371,20 @@ def build_teacher_model(args):
     nets = Munch(generator=generator,
                  mapping_network=mapping_network,
                  style_encoder=style_encoder)
+    
+    if args.efficient == 0:
+        generator_ema = copy.deepcopy(generator)
+        mapping_network_ema = copy.deepcopy(mapping_network)
+        style_encoder_ema = copy.deepcopy(style_encoder)
+        nets_ema = Munch(generator=generator_ema,
+                     mapping_network=mapping_network_ema,
+                     style_encoder=style_encoder_ema)
 
     if args.w_hpf > 0:
         fan = FAN(fname_pretrained=args.wing_path).eval()
         nets.fan = fan
+        
+    if args.efficient == 0:
+        return nets, nets_ema
 
     return nets
