@@ -1,4 +1,10 @@
-# LiStargan_ADA
+# Unsupervised Image-to-Image Translation with A Lightweight GAN
+
+This Repository Implements A lightweight StarGAN v2 with Knowledge Distillation and Adaptive Data Augmentation (ADA).
+
+### 11785 Project
+
+#### Team Members: Hongkai Jiang, Haoran Lyu, Jianyu Mao, Yijie Qu
 
 ## 1. Install the dependencies
 ```bash
