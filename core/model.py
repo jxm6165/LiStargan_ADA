@@ -366,10 +366,10 @@ class Discriminator(nn.Module):
 
 
 def build_model(args):
-    generator = Generator(args.img_size,args.style_dim,args.alpha,args.w_hpf,args.efficient)
+    generator = Generator(args.img_size,args.style_dim,128,args.w_hpf,1)
     mapping_network = MappingNetwork(args.latent_dim,args.style_dim,args.num_domains)
-    style_encoder = StyleEncoder(args.img_size,args.style_dim,args.num_domains,args.alpha,args.efficient)
-    discriminator = Discriminator(args.img_size,args.num_domains,args.alpha)
+    style_encoder = StyleEncoder(args.img_size,args.style_dim,args.num_domains,128,1)
+    discriminator = Discriminator(args.img_size,args.num_domains,128)
     generator_ema = copy.deepcopy(generator)
     mapping_network_ema = copy.deepcopy(mapping_network)
     style_encoder_ema = copy.deepcopy(style_encoder)
