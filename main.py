@@ -17,7 +17,7 @@ import torch
 
 from core.data_loader import get_train_loader
 from core.data_loader import get_test_loader
-from core.distiller import Distiller
+from core.solver import Solver
 
 
 def str2bool(v):
@@ -34,10 +34,8 @@ def main(args):
     cudnn.benchmark = True
     torch.manual_seed(args.seed)
 
-    if args.mode == 'profile':
-        profile = Profile(args)
-        profile.evaluate()
-    elif args.mode == 'train':
+
+    if args.mode == 'train':
         assert len(subdirs(args.train_img_dir)) == args.num_domains
         assert len(subdirs(args.val_img_dir)) == args.num_domains
         loaders = Munch(src=get_train_loader(root=args.train_img_dir,
@@ -60,8 +58,8 @@ def main(args):
                                             shuffle=True,
                                             num_workers=args.num_workers))
         if args.mode == 'train':
-            distiller = Distiller(args)
-            distiller.train(loaders)    
+            solver = Solver(args)
+            solver.train(loaders)    
 
     elif args.mode == 'sample':
         solver = Solver(args)
